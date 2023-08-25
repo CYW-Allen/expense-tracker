@@ -10,16 +10,14 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Record.belongsTo(models.User);
-      Record.belongsTo(models.Category);
+      Record.belongsTo(models.User, { foreignKey: 'userId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
+      Record.belongsTo(models.Category, { foreignKey: 'categoryId', onUpdate: 'CASCADE', onDelete: 'CASCADE' });
     }
   }
   Record.init({
     name: DataTypes.STRING,
     date: DataTypes.DATEONLY,
     amount: DataTypes.INTEGER,
-    userId: DataTypes.INTEGER,
-    categoryId: DataTypes.INTEGER,
   }, {
     sequelize,
     modelName: 'Record',
