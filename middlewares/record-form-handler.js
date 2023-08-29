@@ -1,6 +1,6 @@
 module.exports = (req, res, next) => {
   const { name, date, categoryId, amount } = req.body;
-  const categoryIdList = Object.keys(res.locals.categories);
+  const categories = res.locals.categories;
 
   if (!name || !name.replace(/\s/g, '').length) {
     req.flash('fail', '無效的支出項目名');
@@ -12,7 +12,7 @@ module.exports = (req, res, next) => {
     return res.redirect('back');
   }
 
-  if (!categoryId || categoryIdList.indexOf(categoryId) === -1) {
+  if (!categoryId || !categories.some((category) => category.id === categoryId)) {
     req.flash('fail', '無效的支出類別');
     return res.redirect('back');
   }

@@ -1,0 +1,10 @@
+.recordHandler {
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 80%;
+}
+
+.ignoreClick {
+  pointer-events: none;
+}

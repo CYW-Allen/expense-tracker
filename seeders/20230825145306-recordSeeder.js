@@ -1,6 +1,6 @@
 'use strict';
 const bcrypt = require('bcryptjs');
-const { getRandomInt, randomScale } = require('../utils/tools');
+const { getRandomInt, randomScale } = require('../utils/backend/tools');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

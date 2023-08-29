@@ -8,7 +8,8 @@
     "seed": "npx sequelize db:seed:all",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "packtools": "npx webpack --config webpack.config.js"
   },
   "author": "Allen Chen",
   "license": "ISC",
@@ -24,5 +25,12 @@
     "passport-local": "^1.0.0",
     "sequelize": "^6.32.1",
     "sequelize-cli": "^6.6.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.11",
+    "@babel/preset-env": "^7.22.10",
+    "babel-loader": "^9.1.3",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   }
 }

@@ -11,7 +11,14 @@ router.get('/', async (_req, res, next) => {
       order: [['date', 'DESC']],
     });
 
-    res.json({ count, rows, categories: res.locals.categories });
+    res.render('index', {
+      count,
+      records: rows.map((row) => {
+        row.categoryIcon = res.locals.categories[Number(row.categoryId) - 1].icon
+        return row;
+      }),
+    });
+    //res.json({ count, rows, categories: res.locals.categories });
   } catch (err) {
     err.alertMsg = '支出清單獲取失敗';
     next(err);
