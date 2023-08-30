@@ -28,6 +28,18 @@
 </div>
 
 <div class="w-100 mt-3" style="position: relative;">
+  <div class="listHandler d-flex flex-column justify-content-start align-items-end">
+    <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#filterModel">
+      <i class="fas fa-filter"></i>
+    </button>
+    <button type="button" class="btn btn-secondary btn-lg w-100 mt-1" data-bs-toggle="modal"
+      data-bs-target="#sortModal">
+      <i class="fas fa-sort-amount-down"></i>
+    </button>
+    <button type="button" class="btn btn-success btn-lg w-100 mt-1" data-bs-toggle="modal" data-bs-target="#chartModal">
+      <i class="fas fa-chart-line"></i>
+    </button>
+  </div>
   <div class="mainContent mx-auto shadow bg-body rounded" id="virtualScrollArea" style="overflow: auto;">
     <div id="recordsContainer" style="overflow:hidden;">
       <div id="displayArea"></div>
@@ -40,6 +52,65 @@
   <a href="/records/new" class="w-100 btn btn-warning">新增支出</a>
 </div>
 
+<div class="modal fade" id="filterModel" tabindex="-1" aria-labelledby="filterModelLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModelLabel">過濾支出記錄</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <span class="input-group-text" id="filterInputLabel">關鍵字</span>
+          <input type="text" class="form-control" aria-describedby="filterInputLabel" oninput="processFilter(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="sortModal" tabindex="-1" aria-labelledby="sortModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sortModalLabel">排序支出記錄(遞減)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="sortByObj">排序對象</label>
+          <select class="form-select" id="sortByObj">
+            <option selected value="null" disabled>Choose...</option>
+            <option value="name">支出名稱</option>
+            <option value="categoryId">支出類別</option>
+            <option value="amount">支出金額</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="sortRecords()">進行排序</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="chartModal" tabindex="-1" aria-labelledby="chartModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="chartModalLabel">支出統計</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        ...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
 {{> message}}
 
 <script>
@@ -49,6 +120,7 @@
   let records = oriRecords;
   let curCategory = '總覽';
   const totalAmountEle = document.getElementById('totalAmount');
+  const processFilter = tools.debounce(filterRecords);
 
   function updateRecords() {
     cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
@@ -89,6 +161,34 @@
     if (window.confirm(`確定要刪出該筆支出 "${event.target.dataset.recordInfo}"?`)) {
       event.target.submit();
     }
+  }
+
+  function filterRecords(event) {
+    const keyword = event.target.value;
+
+    if (keyword === '') records = oriRecords;
+    else {
+      records = records.filter((record) => (
+        record.name.includes(keyword) || record.date.includes(keyword) || record.amount.toString().includes(keyword)
+      ));
+    }
+    updateRecords();
+  }
+
+  function sortRecords() {
+    const sortObj = document.getElementById('sortByObj').value;
+
+    switch (sortObj) {
+      case 'name':
+        records.sort((a, b) => b[sortObj].localeCompare(a[sortObj]));
+        break;
+      case 'categoryId':
+      case 'amount':
+        records.sort((a, b) => b[sortObj] - a[sortObj]);
+        break;
+      default:
+    }
+    if (sortObj) updateRecords();
   }
 
   updateRecords();

@@ -2,6 +2,13 @@
   width: 50%;
 }
 
+.listHandler {
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 76%;
+}
+
 .recordHandler {
   height: 100%;
   position: absolute;
