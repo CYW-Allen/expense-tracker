@@ -2,6 +2,7 @@ const express = require('express');
 const { create } = require('express-handlebars');
 const session = require('express-session');
 const flash = require('connect-flash');
+const methodOverride = require('method-override');
 require('dotenv').config();
 
 const router = require('./routes/index');
@@ -11,7 +12,16 @@ const errHandler = require('./middlewares/error-handler');
 const app = express();
 const hbs = create({
   extname: '.hbs',
-  helpers: { toJsonStr: (context) => JSON.stringify(context) },
+  helpers: { 
+    toJsonStr: (context) => JSON.stringify(context),
+    formAction: (record) => record ? `/records/${record.id}?_method=PUT` : '/records',
+    formTitle: (record) => record ? '請修改你的支出' : '請輸入你的支出',
+    formSelect: (category, record) => {
+      if (!record) return !category ? 'selected' : '';
+      return category === record.categoryId ? 'selected' : ''; 
+    },
+    formSubmitBtn: (record) => record ? '送出' : '新增支出',
+  },
 });
 const PORT = process.env.APP_PORT || 3000;
 
@@ -22,6 +32,7 @@ app.set('views', './views');
 app.disable('x-powered-by');
 
 app.use(express.static('public'));
+app.use(methodOverride('_method'));
 app.use(session({
   secret: process.env.SESSION_SECRET_KEY,
   resave: false,

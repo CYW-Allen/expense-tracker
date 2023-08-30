@@ -1,4 +1,4 @@
-<div class="dropdown w-50 mx-auto mt-5">
+<div class="dropdown mainContent mx-auto mt-5">
   <a class="btn btn-light fs-5 dropdown-toggle d-flex justify-content-between align-items-center fw-bold" href="#"
     role="button" id="categoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
     類別
@@ -20,15 +20,15 @@
   </ul>
 </div>
 
-<div class="row w-50 mx-auto mt-4">
-  <div class="col-3 d-flex align-items-start">
+<div class="row mainContent mx-auto mt-4" style="position: relative;">
+  <div class="d-flex align-items-start" style="position: absolute; top: 0; left: 0;">
     <div class="text-center fs-5">總金額 : </div>
   </div>
-  <div class="col-9 text-end" style="font-size:72px;color: orangered;" id="totalAmount">0</div>
+  <div class="text-end" style="font-size:72px;color: orangered;" id="totalAmount">0</div>
 </div>
 
 <div class="w-100 mt-3" style="position: relative;">
-  <div class="w-50 mx-auto shadow bg-body rounded" id="virtualScrollArea" style="overflow: auto;">
+  <div class="mainContent mx-auto shadow bg-body rounded" id="virtualScrollArea" style="overflow: auto;">
     <div id="recordsContainer" style="overflow:hidden;">
       <div id="displayArea"></div>
     </div>
@@ -37,14 +37,37 @@
 </div>
 
 <div class="mx-auto mt-5 mb-3" style="width: 30%;">
-  <button class="w-100 btn btn-warning">新增支出</button>
+  <a href="/records/new" class="w-100 btn btn-warning">新增支出</a>
 </div>
+
+{{> message}}
 
 <script>
   const oriRecords = JSON.parse('{{{toJsonStr records}}}');
+  const recordCount = Number('{{{count}}}');
+  const scrollToRec = parseInt('{{{scrollTo}}}');
   let records = oriRecords;
   let curCategory = '總覽';
   const totalAmountEle = document.getElementById('totalAmount');
+
+  function updateRecords() {
+    cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
+    document.querySelector('.recordHandler').innerHTML = Array.from({ length: 5 }, (_, index) => index).reduce((html, index) => (
+      html + '<div class="btnField" style="height:20%">'
+      + `${index < records.length
+        ? `
+            <a href="/records/${records[index].id}/edit" class="btn btn-primary" id="edit-btn-${index}"></a>
+            <form action="/records/${records[index].id}?_method=DELETE" method="post" style="display:inline-block;" id="deleteForm${index}"
+              data-record-info="[${records[index].date}] ${records[index].name} \$${records[index].amount}"  onsubmit="handleDeleteReq(event)">
+              <button type="submit" class="btn btn-danger""></button>
+            </form>
+          `
+        : ''
+      }`
+      + '</div>'
+    ), '');
+    virtualScroll.handleVirtualScroll(records);
+  }
 
   function displaySpecRecords(event) {
     if (event.target.matches('.categoryBtn')) {
@@ -55,23 +78,23 @@
       if (curCategory !== reqCategoryName) {
         records = reqCategoryId === -1
           ? oriRecords : oriRecords.filter((record) => record.categoryId === reqCategoryId);
-        cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
-        virtualScroll.handleVirtualScroll(records);
+        updateRecords();
       }
       curCategory = reqCategoryName;
     }
   }
 
-  cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
-  document.querySelector('.recordHandler').innerHTML = Array.from({ length: 5 }, (_, index) => index).reduce((html, index) => (
-    html + `
-      <div class="flex-fill row justify-content-center align-items-center" style="">
-        <div>
-          <button type="button" class="btn btn-primary" id="edit-btn-${index}" data-record-id="${records[index].id}">修改</button>
-          <button type="button" class="btn btn-danger ms-2" id="delete-btn-${index}" data-record-id="${records[index].id}">刪除</button>
-        </div>
-      </div>
-    `
-  ), '');
-  virtualScroll.handleVirtualScroll(records);
+  function handleDeleteReq(event) {
+    event.preventDefault();
+    if (window.confirm(`確定要刪出該筆支出 "${event.target.dataset.recordInfo}"?`)) {
+      event.target.submit();
+    }
+  }
+
+  updateRecords();
+
+  if (!isNaN(scrollToRec)) {
+    const scrollDist = (recordCount - scrollToRec) * 100;
+    document.getElementById('virtualScrollArea').scrollTop = scrollDist;
+  }
 </script>

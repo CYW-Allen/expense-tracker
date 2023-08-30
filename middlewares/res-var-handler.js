@@ -12,10 +12,11 @@ module.exports = async (req, res, next) => {
 
     res.locals.categories = (await Category.findAll({ raw: true })).map((category) => ({
       ...category,
-      icon: categoryIcon[category.name] || '<i></i>',
+      icon: categoryIcon[category.name],
     }));
     res.locals.successMsg = req.flash('success');
     res.locals.alertMsg = req.flash('fail');
+    res.locals.scrollTo = req.flash('scrollTo');
   } catch (err) {
     return next(err);
   }

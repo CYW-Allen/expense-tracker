@@ -1,0 +1,64 @@
+<div class="w-50 mx-auto mt-5 row">
+  <div class="col-3 fs-4">*必填欄位</div>
+  <div class="col-9 fs-2 d-flex justify-content-center align-items-center">{{formTitle record}}</div>
+</div>
+<form action="{{formAction record}}" method="POST"
+  class="w-50 h-75 mx-auto d-flex flex-column justify-content-around needs-validation mt-3" id="recordForm" novalidate>
+  <div class="row mb-3">
+    <label for="name" class="col-3 col-form-label fs-4 fw-bold">名稱* :</label>
+    <div class="col-9">
+      <input type="text" class="form-control fs-4" name="name" id="name" value="{{record.name}}" required>
+    </div>
+  </div>
+  <div class="row mb-3">
+    <label for="date" class="col-3 col-form-label fs-4 fw-bold">日期* :</label>
+    <div class="col-9">
+      <input type="date" class="form-control fs-4" name="date" id="date" value="{{record.date}}">
+    </div>
+  </div>
+  <div class="row mb-3">
+    <label for="categoryId" class="col-3 col-form-label fs-4 fw-bold">類別* :</label>
+    <div class="col-9">
+      <select class="form-select fs-4" name="categoryId" id="categoryId" required>
+        <option {{formSelect '' record}} disabled value="">Select</option>
+        {{#each categories as |category|}}
+        <option {{formSelect category.id record}} value="{{category.id}}">
+          <i class="{{category.icon}} me-2"></i>
+          <span>{{category.name}}</span>
+        </option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  <div class="row mb-3">
+    <label for="amount" class="col-3 col-form-label fs-4 fw-bold">金額* :</label>
+    <div class="col-9">
+      <input type="text" class="form-control fs-4" name="amount" id="amount" pattern="[0-9]+" value="{{record.amount}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3"></div>
+    <div class="col-9">
+      <button type="submit" class="w-100 btn btn-outline-secondary fw-bold">{{formSubmitBtn record}}</button>
+    </div>
+  </div>
+</form>
+{{> message}}
+
+<script>
+  const recordForm = document.getElementById('recordForm');
+  const inputDate = document.getElementById('date');
+  const curTime = new Date();
+
+  if (inputDate.value === '') {
+    inputDate.value = `${curTime.getFullYear()}-${`0${curTime.getMonth() + 1}`.slice(-2)}-${`0${curTime.getDate()}`.slice(-2)}`;
+  }
+
+  recordForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    recordForm.classList.add('was-validated');
+    if (recordForm.checkValidity()) recordForm.submit();
+  })
+</script>

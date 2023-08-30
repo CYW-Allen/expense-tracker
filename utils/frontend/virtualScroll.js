@@ -1,16 +1,6 @@
+const { throttle } = require('./tools');
+
 let scrollRecordsHandler;
-
-function throttle(func, delay = 500) {
-  let timer = null;
-
-  return (...args) => {
-    if (timer) return;
-    timer = setTimeout(() => {
-      func(...args);
-      timer = null;
-    }, delay);
-  }
-}
 
 function handleVirtualScroll(records) {
   const scrollAreaHeight = 500;
@@ -43,15 +33,19 @@ function handleVirtualScroll(records) {
 
   function configHandlerBtnRecordId() {
     const firstScrollItemMidPos = document.getElementById('scrollItem0').getBoundingClientRect().y + (recordHeight >> 1);
-    const startIndex = firstScrollItemMidPos > viewAreaYval
-      ? 0 : firstScrollItemMidPos + 100 > viewAreaYval
+    const startIndex = (firstScrollItemMidPos > viewAreaYval)
+      ? 0 : (firstScrollItemMidPos + 100 > viewAreaYval)
         ? 1 : 2;
-    const endIndex = startIndex + 5;
+    const endIndex = startIndex + Math.min(records.length, 5);
     let btnIndex = 0;
 
     for (let i = startIndex; i < endIndex; i++) {
-      document.getElementById(`edit-btn-${btnIndex}`).dataset.recordId = document.getElementById(`scrollItem${i}`).dataset.recordId;
-      document.getElementById(`delete-btn-${btnIndex}`).dataset.recordId = document.getElementById(`scrollItem${i}`).dataset.recordId;
+      const curRecordId = document.getElementById(`scrollItem${i}`).dataset.recordId;
+      const curRecordIndex = records.findIndex((record) => record.id === Number(curRecordId));
+
+      document.getElementById(`edit-btn-${btnIndex}`).setAttribute('href', `/records/${curRecordId}/edit`);
+      document.getElementById(`deleteForm${btnIndex}`).setAttribute('action', `/records/${curRecordId}?_method=DELETE`);
+      document.getElementById(`deleteForm${btnIndex}`).dataset.recordInfo = `[${records[curRecordIndex].date}] ${records[curRecordIndex].name} \$${records[curRecordIndex].amount}`;
       btnIndex++;
     }
   }
@@ -82,4 +76,4 @@ function handleVirtualScroll(records) {
   virtualScrollArea.addEventListener('scroll', scrollRecordsHandler);
 }
 
-export { throttle, handleVirtualScroll }
+export { handleVirtualScroll }

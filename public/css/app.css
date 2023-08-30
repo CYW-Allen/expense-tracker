@@ -1,3 +1,7 @@
+.mainContent {
+  width: 50%;
+}
+
 .recordHandler {
   height: 100%;
   position: absolute;
@@ -5,6 +9,65 @@
   left: 80%;
 }
 
+.btnField {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.btnField a::before {
+  content: '修改';
+}
+
+.btnField button::before {
+  content: '刪除';
+}
+
 .ignoreClick {
   pointer-events: none;
+}
+
+.msgAlert {
+  width: 500px;
+  position: fixed;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  margin: auto;
+}
+
+@media (max-width: 767.98px) {
+  .mainContent {
+    width: 70%;
+  }
+
+  .recordHandler {
+    left: 90%;
+  }
+
+  .btnField {
+    flex-direction: column;
+
+  }
+
+  .btnField a::before {
+    content: '🖊️';
+  }
+
+  .btnField button::before {
+    content: '🗑️';
+  }
+}
+
+
+@media (min-width: 768px) {
+  .mainContent {
+    width: 50%;
+  }
+
+  .btnField button {
+    margin-left: 10px;
+  }
 }

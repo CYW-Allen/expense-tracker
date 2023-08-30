@@ -11,8 +11,8 @@ module.exports = (req, res, next) => {
     req.flash('fail', '無效的支出日期');
     return res.redirect('back');
   }
-
-  if (!categoryId || !categories.some((category) => category.id === categoryId)) {
+  
+  if (!categoryId || !categories.some((category) => category.id === Number(categoryId))) {
     req.flash('fail', '無效的支出類別');
     return res.redirect('back');
   }

@@ -8,7 +8,7 @@ router.get('/', async (_req, res, next) => {
     const { count, rows } = await Record.findAndCountAll({
       where: { userId },
       raw: true,
-      order: [['date', 'DESC']],
+      order: [['id', 'DESC']],
     });
 
     res.render('index', {
@@ -17,19 +17,24 @@ router.get('/', async (_req, res, next) => {
         row.categoryIcon = res.locals.categories[Number(row.categoryId) - 1].icon
         return row;
       }),
+      scrollTo: res.locals.scrollTo,
     });
-    //res.json({ count, rows, categories: res.locals.categories });
   } catch (err) {
     err.alertMsg = '支出清單獲取失敗';
     next(err);
   }
 });
 
+router.get('/new', (_req, res) => {
+  res.render('recordForm', { categories: res.locals.categories });
+})
+
 router.post('/', verifyRecordForm, async (req, res, next) => {
   try {
     const { name, date, categoryId, amount } = req.body;
     const userId = 1;
-    const record = await Record.create({
+
+    await Record.create({
       name: name.slice(0, 255),
       date: new Date(date),
       amount: Number(amount),
@@ -37,22 +42,28 @@ router.post('/', verifyRecordForm, async (req, res, next) => {
       categoryId: Number(categoryId),
     });
 
-    res.json(record);
+    req.flash('success', '成功新增支出');
+    res.redirect('/records');
   } catch (err) {
     err.alertMsg = '紀錄支出失敗';
     next(err);
   }
 });
 
-// for dev
-router.get('/:id', async (req, res, next) => {
+router.get('/:id/edit', async (req, res, next) => {
   try {
     const userId = 1;
     const record = await Record.findByPk(req.params.id, { raw: true });
 
-    res.json(record);
+    if (!record) {
+      req.flash('fail', '指定支出不存在');
+      res.redirect('/records');
+    } else if (record.userId !== userId) {
+      req.flash('fail', '該請求未授權');
+      res.redirect('/records');
+    } else res.render('recordForm', { categories: res.locals.categories, record });
   } catch (err) {
-    err.alertMsg = '查詢指定支出失敗';
+    err.alertMsg = '編輯指定支出請求失敗';
     next(err);
   }
 });
@@ -61,19 +72,22 @@ router.put('/:id', verifyRecordForm, async (req, res, next) => {
   try {
     const { name, date, categoryId, amount } = req.body;
     const userId = 1;
-    const record = await Record.findOne({
-      where: { id: req.params.id, userId },
-    });
+    const record = await Record.findByPk(req.params.id);
 
-    if (record) {
-      await record.update({
+    if(!record) req.flash('fail', '指定支出不存在');
+    else if (record.userId !== userId) req.flash('fail', '該請求未授權');
+    else {
+      const recordId = (await record.update({
         name: name.slice(0, 255),
         date: new Date(date),
         amount: Number(amount),
         categoryId: Number(categoryId),
-      });
-      res.send('The record is success to update.');
-    } else res.send('The required record is not existed');
+      })).id;
+
+      req.flash('success', '成功更新支出');
+      req.flash('scrollTo', recordId);
+    }
+    res.redirect('/records');
   } catch (err) {
     err.alertMsg = '修改支出失敗';
     next(err);
