@@ -2,11 +2,10 @@ const router = require('express').Router();
 const Record = require('../models').Record;
 const verifyRecordForm = require('../middlewares/record-form-handler');
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const userId = 1;
     const { count, rows } = await Record.findAndCountAll({
-      where: { userId },
+      where: { userId: req.user.id },
       raw: true,
       order: [['id', 'DESC']],
     });
@@ -32,13 +31,12 @@ router.get('/new', (_req, res) => {
 router.post('/', verifyRecordForm, async (req, res, next) => {
   try {
     const { name, date, categoryId, amount } = req.body;
-    const userId = 1;
 
     await Record.create({
       name: name.slice(0, 255),
       date: new Date(date),
       amount: Number(amount),
-      userId,
+      userId: req.user.id,
       categoryId: Number(categoryId),
     });
 
@@ -52,13 +50,12 @@ router.post('/', verifyRecordForm, async (req, res, next) => {
 
 router.get('/:id/edit', async (req, res, next) => {
   try {
-    const userId = 1;
     const record = await Record.findByPk(req.params.id, { raw: true });
 
     if (!record) {
       req.flash('fail', '指定支出不存在');
       res.redirect('/records');
-    } else if (record.userId !== userId) {
+    } else if (record.userId !== req.user.id) {
       req.flash('fail', '該請求未授權');
       res.redirect('/records');
     } else res.render('recordForm', { categories: res.locals.categories, record });
@@ -71,11 +68,10 @@ router.get('/:id/edit', async (req, res, next) => {
 router.put('/:id', verifyRecordForm, async (req, res, next) => {
   try {
     const { name, date, categoryId, amount } = req.body;
-    const userId = 1;
     const record = await Record.findByPk(req.params.id);
 
     if(!record) req.flash('fail', '指定支出不存在');
-    else if (record.userId !== userId) req.flash('fail', '該請求未授權');
+    else if (record.userId !== req.user.id) req.flash('fail', '該請求未授權');
     else {
       const recordId = (await record.update({
         name: name.slice(0, 255),
@@ -96,11 +92,10 @@ router.put('/:id', verifyRecordForm, async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userId = 1;
     const record = await Record.findByPk(req.params.id);
 
     if (!record) req.flash('fail', '指定支出不存在');
-    else if (record.userId !== userId) req.flash('fail', '未授權的請求');
+    else if (record.userId !== req.user.id) req.flash('fail', '未授權的請求');
     else {
       await record.destroy();
       req.flash('success', '成功刪除該支出');

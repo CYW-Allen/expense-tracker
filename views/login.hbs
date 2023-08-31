@@ -1,0 +1,37 @@
+<h1 class="text-center mt-5">帳號登入</h1>
+<div class="mt-5 container w-50">
+  <form action="/login" method="POST" class="needs-validation" id="loginForm" novalidate>
+    <div class="row mb-3">
+      <label for="name" class="col-3 col-form-label fs-5 fw-bold">用戶名稱</label>
+      <div class="col-9">
+        <input type="text" class="form-control" name="name" id="name" required>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="category" class="col-3 col-form-label fs-5 fw-bold">帳號密碼</label>
+      <div class="col-9">
+        <input type="password" class="form-control" name="password" id="password" required>
+      </div>
+    </div>
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary" id="login">登入</button>
+    </div>
+  </form>
+  <div class="d-flex justify-content-center align-items-center">
+    <span class="me-2">尚未加入?</span>
+    <a class="btn btn-success" href="/register">帳號註冊</a>
+  </div>
+</div>
+{{> message}}
+
+<script>
+  const loginForm = document.getElementById('loginForm');
+
+  loginForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    loginForm.classList.add('was-validated');
+    if (loginForm.checkValidity()) loginForm.submit();
+  })
+</script>

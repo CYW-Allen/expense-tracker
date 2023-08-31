@@ -17,6 +17,7 @@ module.exports = async (req, res, next) => {
     res.locals.successMsg = req.flash('success');
     res.locals.alertMsg = req.flash('fail');
     res.locals.scrollTo = req.flash('scrollTo');
+    res.locals.user = req.user;
   } catch (err) {
     return next(err);
   }

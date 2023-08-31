@@ -32,6 +32,8 @@ function handleVirtualScroll(records) {
   }
 
   function configHandlerBtnRecordId() {
+    if (!document.getElementById('scrollItem0')) return;
+    
     const firstScrollItemMidPos = document.getElementById('scrollItem0').getBoundingClientRect().y + (recordHeight >> 1);
     const startIndex = (firstScrollItemMidPos > viewAreaYval)
       ? 0 : (firstScrollItemMidPos + 100 > viewAreaYval)

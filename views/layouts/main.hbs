@@ -21,6 +21,11 @@
     <nav class="navbar navbar-light bg-light">
       <div class="container-fluid justify-content-between px-5">
         <a class="navbar-brand fw-bold" href="/">家庭記帳本</a>
+        {{#if user}}
+        <form action="/logout" method="post" class="ms-2" style="display: inline-block;">
+          <button type="submit" class="btn btn-secondary" id="logout">帳號登出</button>
+        </form>
+        {{/if}}
       </div>
     </nav>
   </header>

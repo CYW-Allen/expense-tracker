@@ -5,6 +5,7 @@ const flash = require('connect-flash');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
+const passport = require('./config/passport');
 const router = require('./routes/index');
 const resVarHandler = require('./middlewares/res-var-handler');
 const errHandler = require('./middlewares/error-handler');
@@ -39,6 +40,8 @@ app.use(session({
   saveUninitialized: false,
 }));
 app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.urlencoded({ extended: true }));
 app.use(resVarHandler);
 app.use(router);
