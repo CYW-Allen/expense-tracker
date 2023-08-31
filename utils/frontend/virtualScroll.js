@@ -1,20 +1,51 @@
 const { throttle } = require('./tools');
 
-let scrollRecordsHandler;
+export class VShandler {
+  #records;
+  #virtualScrollArea;
+  #recordContainer;
+  #displayArea;
+  #scrollAreaHeight;
+  #displayRecordsNum;
+  #recordHeight;
+  #paddingRecordsNum;
+  #viewAreaYval;
 
-function handleVirtualScroll(records) {
-  const scrollAreaHeight = 500;
-  const displayRecords = 5;
-  const recordHeight = scrollAreaHeight / displayRecords;
-  const paddingRecordsNum = 2;
-  const virtualScrollArea = document.getElementById('virtualScrollArea');
-  const viewAreaYval = virtualScrollArea.getBoundingClientRect().y;
+  constructor(records, virtualScrollAreaId, recordsContainerId, displayAreaId, scrollAreaHeight, displayRecordsNum, paddingRecordsNum) {
+    this.#records = records;
+    this.#virtualScrollArea = document.getElementById(virtualScrollAreaId);
+    this.#recordContainer = document.getElementById(recordsContainerId);
+    this.#displayArea = document.getElementById(displayAreaId);
 
-  function updateContentOfScrollTo(records, startIndex, amount) {
-    document.getElementById('displayArea').innerHTML = records.slice(startIndex, startIndex + amount).reduce((html, record, index) => {
+    if (this.#records === undefined || !(this.#records instanceof Array) || this.#virtualScrollArea === undefined || this.#recordContainer === undefined
+      || this.#displayArea === undefined) {
+      throw new Error('Invalid parameters for virtual scroll');
+    }
+
+    this.#scrollAreaHeight = scrollAreaHeight || 500;
+    this.#displayRecordsNum = displayRecordsNum || 5;
+    this.#recordHeight = this.#scrollAreaHeight / this.#displayRecordsNum;
+    this.#paddingRecordsNum = paddingRecordsNum || 2;
+
+    this.#virtualScrollArea.style.height = `${this.#scrollAreaHeight}px`;
+    this.#recordContainer.style.height = `${this.#records.length * this.#recordHeight}px`;
+    this.#viewAreaYval = this.#virtualScrollArea.getBoundingClientRect().y;
+    this.#virtualScrollArea.addEventListener('scroll', throttle(this.#virtualScrollContent.bind(this)));
+  }
+
+  handleScrollContentChange(records) {
+    this.#records = records;
+    this.#recordContainer.style.height = `${this.#records.length * this.#recordHeight}px`;
+    this.#virtualScrollArea.scrollTop = 0;
+    this.#updateContentOfScrollTo(0, this.#displayRecordsNum + 2 * this.#paddingRecordsNum);
+    this.#configHandlerBtnRecordId();
+  }
+
+  #updateContentOfScrollTo(startIndex, amount) {
+    this.#displayArea.innerHTML = this.#records.slice(startIndex, startIndex + amount).reduce((html, record, index) => {
       const isGrayBg = (startIndex + index) % 2 === 0;
       html += `
-        <div class="row px-2" data-record-id="${record.id}" id="scrollItem${index}" style="height:${recordHeight}px;${isGrayBg ? 'background-color:rgb(241, 241, 241)' : ''}">
+        <div class="row px-2" data-record-id="${record.id}" id="scrollItem${index}" style="height:${this.#recordHeight}px;${isGrayBg ? 'background-color:rgb(241, 241, 241)' : ''}">
           <div class="col-2 d-flex justify-content-end align-items-center pa-0" style="color: rgb(162, 225, 233);">
             <i class="${record.categoryIcon}" style="font-size: 56px"></i>
           </div>
@@ -31,51 +62,41 @@ function handleVirtualScroll(records) {
     }, '');
   }
 
-  function configHandlerBtnRecordId() {
-    if (!document.getElementById('scrollItem0')) return;
-    
-    const firstScrollItemMidPos = document.getElementById('scrollItem0').getBoundingClientRect().y + (recordHeight >> 1);
-    const startIndex = (firstScrollItemMidPos > viewAreaYval)
-      ? 0 : (firstScrollItemMidPos + 100 > viewAreaYval)
+  #configHandlerBtnRecordId() {
+    if (!this.#displayArea.children.length) return;
+
+    const firstScrollItemMidPos = this.#displayArea.children[0].getBoundingClientRect().y + (this.#recordHeight >> 1);
+    const startIndex = (firstScrollItemMidPos > this.#viewAreaYval)
+      ? 0 : (firstScrollItemMidPos + 100 > this.#viewAreaYval)
         ? 1 : 2;
-    const endIndex = startIndex + Math.min(records.length, 5);
+    const endIndex = startIndex + Math.min(this.#records.length, 5);
     let btnIndex = 0;
 
     for (let i = startIndex; i < endIndex; i++) {
-      const curRecordId = document.getElementById(`scrollItem${i}`).dataset.recordId;
-      const curRecordIndex = records.findIndex((record) => record.id === Number(curRecordId));
+      const curRecordId = this.#displayArea.children[i].dataset.recordId;
+      const curRecordIndex = this.#records.findIndex((record) => record.id === Number(curRecordId));
+      const editRecordEle = document.getElementById(`editBtn${btnIndex}`);
+      const delRecordEle = document.getElementById(`deleteForm${btnIndex}`);
 
-      document.getElementById(`edit-btn-${btnIndex}`).setAttribute('href', `/records/${curRecordId}/edit`);
-      document.getElementById(`deleteForm${btnIndex}`).setAttribute('action', `/records/${curRecordId}?_method=DELETE`);
-      document.getElementById(`deleteForm${btnIndex}`).dataset.recordInfo = `[${records[curRecordIndex].date}] ${records[curRecordIndex].name} \$${records[curRecordIndex].amount}`;
+      editRecordEle.setAttribute('href', `/records/${curRecordId}/edit`);
+      delRecordEle.setAttribute('action', `/records/${curRecordId}?_method=DELETE`);
+      delRecordEle.dataset.recordInfo = `[${this.#records[curRecordIndex].date}] ${this.#records[curRecordIndex].name} \$${this.#records[curRecordIndex].amount}`;
       btnIndex++;
     }
   }
 
-  function virtualScrollContent(event) {
+  #virtualScrollContent(event) {
     const renderStartIndex = Math.max(
-      Math.ceil(event.target.scrollTop / recordHeight) - paddingRecordsNum, 0
+      Math.ceil(event.target.scrollTop / this.#recordHeight) - this.#paddingRecordsNum, 0
     );
     const renderAmount = Math.min(
-      Math.ceil(scrollAreaHeight / recordHeight) + 2 * paddingRecordsNum,
-      records.length - renderStartIndex,
+      Math.ceil(this.#scrollAreaHeight / this.#recordHeight) + 2 * this.#paddingRecordsNum,
+      this.#records.length - renderStartIndex,
     );
-    const moveDist = renderStartIndex * recordHeight;
+    const moveDist = renderStartIndex * this.#recordHeight;
 
-    document.getElementById('displayArea').style.transform = `translateY(${moveDist}px)`;
-    updateContentOfScrollTo(records, renderStartIndex, renderAmount);
-    configHandlerBtnRecordId();
+    this.#displayArea.style.transform = `translateY(${moveDist}px)`;
+    this.#updateContentOfScrollTo(renderStartIndex, renderAmount);
+    this.#configHandlerBtnRecordId();
   }
-
-  if (scrollRecordsHandler) virtualScrollArea.removeEventListener('scroll', scrollRecordsHandler);
-  document.getElementById('virtualScrollArea').scrollTop = 0;
-
-  virtualScrollArea.style.height = `${scrollAreaHeight}px`;
-  document.getElementById('recordsContainer').style.height = `${records.length * recordHeight}px`;
-  updateContentOfScrollTo(records, 0, displayRecords + 2 * paddingRecordsNum);
-  configHandlerBtnRecordId();
-  scrollRecordsHandler = throttle(virtualScrollContent);
-  virtualScrollArea.addEventListener('scroll', scrollRecordsHandler);
 }
-
-export { handleVirtualScroll }

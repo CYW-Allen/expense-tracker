@@ -29,7 +29,11 @@
 
 <div class="w-100 mt-3" style="position: relative;">
   <div class="listHandler d-flex flex-column justify-content-start align-items-end">
-    <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#filterModel">
+    <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#dateRngModal">
+      <i class="far fa-calendar-alt"></i>
+    </button>
+    <button type="button" class="btn btn-primary btn-lg w-100 mt-1" data-bs-toggle="modal"
+      data-bs-target="#filterModel">
       <i class="fas fa-filter"></i>
     </button>
     <button type="button" class="btn btn-secondary btn-lg w-100 mt-1" data-bs-toggle="modal"
@@ -50,6 +54,37 @@
 
 <div class="mx-auto mt-5 mb-3" style="width: 30%;">
   <a href="/records/new" class="w-100 btn btn-warning">新增支出</a>
+</div>
+
+<div class="modal fade" id="dateRngModal" tabindex="-1" aria-labelledby="dateRngModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dateRngModalLabel">指定時段資料</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <label for="startTime" class="col-3 col-form-label fs-4 fw-bold">起 :</label>
+          <div class="col-9">
+            <input type="date" class="form-control fs-4" style="cursor: pointer;" id="startTime"
+              onfocus="this.showPicker()" onchange="setEndTimeLimit(event)" onkeydown="return false">
+          </div>
+        </div>
+        <div class="input-group mb-3">
+          <label for="endTime" class="col-3 col-form-label fs-4 fw-bold">迄 :</label>
+          <div class="col-9">
+            <input type="date" class="form-control fs-4" style="cursor: pointer;" id="endTime"
+              onfocus="this.showPicker()" disabled onkeydown="return false">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="getPeriodRecords()">進行篩選</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="filterModel" tabindex="-1" aria-labelledby="filterModelLabel" aria-hidden="true">
@@ -121,14 +156,19 @@
   let curCategory = '總覽';
   const totalAmountEle = document.getElementById('totalAmount');
   const processFilter = tools.debounce(filterRecords);
+  const vsHandler = new virtualScroll.VShandler(records, 'virtualScrollArea', 'recordsContainer', 'displayArea');
+  const curTime = new Date();
+  const curDateStr = `${curTime.getFullYear()}-${`0${curTime.getMonth() + 1}`.slice(-2)}-${curTime.getDate()}`;
+  const startTimeEle = document.getElementById('startTime');
+  const endTimeEle = document.getElementById('endTime');
 
-  function updateRecords() {
+  function handleRecordsChange() {
     cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
     document.querySelector('.recordHandler').innerHTML = Array.from({ length: 5 }, (_, index) => index).reduce((html, index) => (
       html + '<div class="btnField" style="height:20%">'
       + `${index < records.length
         ? `
-            <a href="/records/${records[index].id}/edit" class="btn btn-primary" id="edit-btn-${index}"></a>
+            <a href="/records/${records[index].id}/edit" class="btn btn-primary" id="editBtn${index}"></a>
             <form action="/records/${records[index].id}?_method=DELETE" method="post" style="display:inline-block;" id="deleteForm${index}"
               data-record-info="[${records[index].date}] ${records[index].name} \$${records[index].amount}"  onsubmit="handleDeleteReq(event)">
               <button type="submit" class="btn btn-danger""></button>
@@ -138,7 +178,7 @@
       }`
       + '</div>'
     ), '');
-    virtualScroll.handleVirtualScroll(records);
+    vsHandler.handleScrollContentChange(records);
   }
 
   function displaySpecRecords(event) {
@@ -150,7 +190,7 @@
       if (curCategory !== reqCategoryName) {
         records = reqCategoryId === -1
           ? oriRecords : oriRecords.filter((record) => record.categoryId === reqCategoryId);
-        updateRecords();
+        handleRecordsChange();
       }
       curCategory = reqCategoryName;
     }
@@ -163,6 +203,38 @@
     }
   }
 
+  startTimeEle.setAttribute('max', curDateStr);
+  endTimeEle.setAttribute('max', curDateStr);
+
+  function setEndTimeLimit(event) {
+    const startTime = event.target.value;
+
+    if (startTime) {
+      endTimeEle.removeAttribute('disabled');
+      if (startTime === curDateStr) endTimeEle.value = curDateStr;
+      endTimeEle.setAttribute('min', event.target.value);
+    } else {
+      endTimeEle.setAttribute('disabled', true);
+    }
+  }
+
+  function getPeriodRecords() {
+    const startTimeStr = startTimeEle.value;
+    const endTimeStr = endTimeEle.value;
+
+    if (startTimeStr === '' || endTimeStr === '') records = oriRecords;
+    else {
+      const dateList = [];
+      const endTime = new Date(endTimeStr).getTime();
+
+      for (let curDate = new Date(startTimeStr); curDate.getTime() <= endTime; curDate.setDate(curDate.getDate() + 1)) {
+        dateList.push(`${curDate.getFullYear()}-${`0${curDate.getMonth() + 1}`.slice(-2)}-${curDate.getDate()}`);
+      }
+      records = records.filter((record) => dateList.includes(record.date));
+    }
+    handleRecordsChange();
+  }
+
   function filterRecords(event) {
     const keyword = event.target.value;
 
@@ -172,7 +244,7 @@
         record.name.includes(keyword) || record.date.includes(keyword) || record.amount.toString().includes(keyword)
       ));
     }
-    updateRecords();
+    handleRecordsChange();
   }
 
   function sortRecords() {
@@ -180,6 +252,7 @@
 
     switch (sortObj) {
       case 'name':
+      case 'date':
         records.sort((a, b) => b[sortObj].localeCompare(a[sortObj]));
         break;
       case 'categoryId':
@@ -188,10 +261,10 @@
         break;
       default:
     }
-    if (sortObj) updateRecords();
+    if (sortObj) handleRecordsChange();
   }
 
-  updateRecords();
+  handleRecordsChange();
 
   if (!isNaN(scrollToRec)) {
     const scrollDist = (recordCount - scrollToRec) * 100;
