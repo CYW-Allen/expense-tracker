@@ -5,6 +5,7 @@ module.exports = {
     virtualScroll: path.resolve(__dirname, 'utils/frontend/virtualScroll.js'),
     cssTricks: path.resolve(__dirname, 'utils/frontend/cssTricks.js'),
     tools: path.resolve(__dirname, 'utils/frontend/tools.js'),
+    chartTools: path.resolve(__dirname, 'utils/frontend/chartTools.js'),
   },
   output: {
     filename: '[name].min.js',

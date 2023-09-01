@@ -45,6 +45,20 @@
   margin: auto;
 }
 
+.c3 svg {
+  font-size: 14px;
+  font-family: Microsoft JhengHei;
+}
+
+.chartContainer .c3-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.chartContainer .c3-legend-item {
+  font-size: 16px;
+}
+
 @media (max-width: 767.98px) {
   .mainContent {
     width: 70%;

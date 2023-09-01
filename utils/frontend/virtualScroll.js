@@ -1,4 +1,4 @@
-const { throttle } = require('./tools');
+import { throttle } from './tools';
 
 export class VShandler {
   #records;
@@ -25,7 +25,7 @@ export class VShandler {
     this.#scrollAreaHeight = scrollAreaHeight || 500;
     this.#displayRecordsNum = displayRecordsNum || 5;
     this.#recordHeight = this.#scrollAreaHeight / this.#displayRecordsNum;
-    this.#paddingRecordsNum = paddingRecordsNum || 2;
+    this.#paddingRecordsNum = paddingRecordsNum || 10;
 
     this.#virtualScrollArea.style.height = `${this.#scrollAreaHeight}px`;
     this.#recordContainer.style.height = `${this.#records.length * this.#recordHeight}px`;
@@ -54,7 +54,7 @@ export class VShandler {
               <div class="fs-3 fw-bold">${record.name}</div>
               <div class="fs-5">${record.date}</div>
             </div>
-            <span class="fs-4 me-2">${record.amount.toLocaleString('zh-hant')}</span>
+            <span class="fs-4 me-2">${record.amount.toLocaleString('zh-Hant')}</span>
           </div>
         </div>
       `;
@@ -62,13 +62,20 @@ export class VShandler {
     }, '');
   }
 
-  #configHandlerBtnRecordId() {
-    if (!this.#displayArea.children.length) return;
+  #getFirstRecordIndexInViewport() {
+    const recordEles = Array.from(this.#displayArea.children);
 
-    const firstScrollItemMidPos = this.#displayArea.children[0].getBoundingClientRect().y + (this.#recordHeight >> 1);
-    const startIndex = (firstScrollItemMidPos > this.#viewAreaYval)
-      ? 0 : (firstScrollItemMidPos + 100 > this.#viewAreaYval)
-        ? 1 : 2;
+    for (const [index, recordEle] of recordEles.entries()) {
+      const elePartialPos = recordEle.getBoundingClientRect().y + this.#recordHeight * 0.3;
+      if (elePartialPos > this.#viewAreaYval) {
+        return index;
+      }
+    }
+    return 0;
+  }
+
+  #configHandlerBtnRecordId() {
+    const startIndex = this.#getFirstRecordIndexInViewport();
     const endIndex = startIndex + Math.min(this.#records.length, 5);
     let btnIndex = 0;
 

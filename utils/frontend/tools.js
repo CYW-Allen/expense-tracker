@@ -24,4 +24,14 @@ function wait(duration) {
   });
 }
 
-module.exports = { throttle, debounce, wait };
+function getFormatDateStr(dateObj) {
+  const reqDateObj = dateObj instanceof Date ? dateObj : new Date();
+
+  return reqDateObj.toLocaleDateString('zh-Hant', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).replace(/\//g, '-');
+}
+
+export { throttle, debounce, wait, getFormatDateStr };

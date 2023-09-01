@@ -29,18 +29,20 @@
 
 <div class="w-100 mt-3" style="position: relative;">
   <div class="listHandler d-flex flex-column justify-content-start align-items-end">
-    <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#dateRngModal">
-      <i class="far fa-calendar-alt"></i>
-    </button>
-    <button type="button" class="btn btn-primary btn-lg w-100 mt-1" data-bs-toggle="modal"
-      data-bs-target="#filterModel">
+    <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#filterModel"
+      title="關鍵字篩選">
       <i class="fas fa-filter"></i>
     </button>
-    <button type="button" class="btn btn-secondary btn-lg w-100 mt-1" data-bs-toggle="modal"
-      data-bs-target="#sortModal">
+    <button type="button" class="btn btn-primary btn-lg w-100 mt-1" data-bs-toggle="modal"
+      data-bs-target="#dateRngModal" title="時段篩選">
+      <i class="far fa-calendar-alt"></i>
+    </button>
+    <button type="button" class="btn btn-secondary btn-lg w-100 mt-1" data-bs-toggle="modal" data-bs-target="#sortModal"
+      title="遞減排序">
       <i class="fas fa-sort-amount-down"></i>
     </button>
-    <button type="button" class="btn btn-success btn-lg w-100 mt-1" data-bs-toggle="modal" data-bs-target="#chartModal">
+    <button type="button" class="btn btn-success btn-lg w-100 mt-1" data-bs-toggle="modal" data-bs-target="#chartModal"
+      title="統計圖表">
       <i class="fas fa-chart-line"></i>
     </button>
   </div>
@@ -54,6 +56,23 @@
 
 <div class="mx-auto mt-5 mb-3" style="width: 30%;">
   <a href="/records/new" class="w-100 btn btn-warning">新增支出</a>
+</div>
+
+<div class="modal fade" id="filterModel" tabindex="-1" aria-labelledby="filterModelLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModelLabel">過濾支出記錄</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <span class="input-group-text" id="filterInputLabel">關鍵字</span>
+          <input type="text" class="form-control" aria-describedby="filterInputLabel" oninput="processFilter(event)">
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="dateRngModal" tabindex="-1" aria-labelledby="dateRngModalLabel" aria-hidden="true">
@@ -87,23 +106,6 @@
   </div>
 </div>
 
-<div class="modal fade" id="filterModel" tabindex="-1" aria-labelledby="filterModelLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="filterModelLabel">過濾支出記錄</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="input-group">
-          <span class="input-group-text" id="filterInputLabel">關鍵字</span>
-          <input type="text" class="form-control" aria-describedby="filterInputLabel" oninput="processFilter(event)">
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="modal fade" id="sortModal" tabindex="-1" aria-labelledby="sortModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -131,14 +133,15 @@
 </div>
 
 <div class="modal fade" id="chartModal" tabindex="-1" aria-labelledby="chartModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="chartModalLabel">支出統計</h5>
+        <h4 class="modal-title fw-bold" id="chartModalLabel">支出統計圖表</h4>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        ...
+      <div class="modal-body px-5 d-flex flex-row justify-content-between align-items-center flex-wrap">
+        <div class="chartContainer" id="amountInCategory"></div>
+        <div class="chartContainer" id="dailyAmount"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
@@ -150,17 +153,27 @@
 
 <script>
   const oriRecords = JSON.parse('{{{toJsonStr records}}}');
+  const categories = JSON.parse('{{{toJsonStr categories}}}');
   const recordCount = Number('{{{count}}}');
   const scrollToRec = parseInt('{{{scrollTo}}}');
+
   let records = oriRecords;
   let curCategory = '總覽';
   const totalAmountEle = document.getElementById('totalAmount');
-  const processFilter = tools.debounce(filterRecords);
   const vsHandler = new virtualScroll.VShandler(records, 'virtualScrollArea', 'recordsContainer', 'displayArea');
-  const curTime = new Date();
-  const curDateStr = `${curTime.getFullYear()}-${`0${curTime.getMonth() + 1}`.slice(-2)}-${curTime.getDate()}`;
+  const processFilter = tools.debounce(filterRecords);
+  const curDateStr = tools.getFormatDateStr(new Date());
   const startTimeEle = document.getElementById('startTime');
   const endTimeEle = document.getElementById('endTime');
+  let dailyAmountChart = null;
+  let amountInCategoryChart = null;
+
+  function refreshChart() {
+    if (dailyAmountChart) dailyAmountChart.destroy();
+    if (amountInCategoryChart) amountInCategoryChart.destroy();
+    dailyAmountChart = c3.generate(chartTools.getLineChartCfg(records, 'dailyAmount'));
+    amountInCategoryChart = c3.generate(chartTools.getPieChartCfg(records, categories, 'amountInCategory'))
+  }
 
   function handleRecordsChange() {
     cssTricks.animateNumber(totalAmountEle, records.reduce((sum, record) => sum + record.amount, 0), 1000);
@@ -179,6 +192,7 @@
       + '</div>'
     ), '');
     vsHandler.handleScrollContentChange(records);
+    refreshChart();
   }
 
   function displaySpecRecords(event) {
@@ -228,7 +242,7 @@
       const endTime = new Date(endTimeStr).getTime();
 
       for (let curDate = new Date(startTimeStr); curDate.getTime() <= endTime; curDate.setDate(curDate.getDate() + 1)) {
-        dateList.push(`${curDate.getFullYear()}-${`0${curDate.getMonth() + 1}`.slice(-2)}-${curDate.getDate()}`);
+        dateList.push(tools.getFormatDateStr(curDate));
       }
       records = records.filter((record) => dateList.includes(record.date));
     }

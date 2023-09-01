@@ -13,7 +13,7 @@
   <div class="row mb-3">
     <label for="date" class="col-3 col-form-label fs-4 fw-bold">日期* :</label>
     <div class="col-9">
-      <input type="date" class="form-control fs-4" name="date" id="date" value="{{record.date}}">
+      <input type="date" class="form-control fs-4" name="date" id="date" onfocus="this.showPicker()" value="{{record.date}}">
     </div>
   </div>
   <div class="row mb-3">
@@ -22,7 +22,7 @@
       <select class="form-select fs-4" name="categoryId" id="categoryId" required>
         <option {{formSelect '' record}} disabled value="">Select</option>
         {{#each categories as |category|}}
-        <option {{formSelect category.id record}} value="{{category.id}}">
+        <option {{formSelect category.id ../record}} value="{{category.id}}">
           <i class="{{category.icon}} me-2"></i>
           <span>{{category.name}}</span>
         </option>
@@ -33,7 +33,7 @@
   <div class="row mb-3">
     <label for="amount" class="col-3 col-form-label fs-4 fw-bold">金額* :</label>
     <div class="col-9">
-      <input type="text" class="form-control fs-4" name="amount" id="amount" pattern="[0-9]+" value="{{record.amount}}">
+      <input type="text" class="form-control fs-4" name="amount" id="amount" pattern="[0-9]+" value="{{record.amount}}" required>
     </div>
   </div>
   <div class="row">
