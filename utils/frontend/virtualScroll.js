@@ -1,51 +1,88 @@
 import { throttle } from './tools';
 
 export class VShandler {
-  #records;
+  #items;
   #virtualScrollArea;
-  #recordContainer;
-  #displayArea;
-  #scrollAreaHeight;
-  #displayRecordsNum;
+  #itemsContainer;
+  #viewport;
+  #viewportHeight;
+  #itemNumInViewport;
   #recordHeight;
-  #paddingRecordsNum;
+  #paddingNum;
+  #renderItemNum;
   #viewAreaYval;
-
-  constructor(records, virtualScrollAreaId, recordsContainerId, displayAreaId, scrollAreaHeight, displayRecordsNum, paddingRecordsNum) {
-    this.#records = records;
-    this.#virtualScrollArea = document.getElementById(virtualScrollAreaId);
-    this.#recordContainer = document.getElementById(recordsContainerId);
-    this.#displayArea = document.getElementById(displayAreaId);
-
-    if (this.#records === undefined || !(this.#records instanceof Array) || this.#virtualScrollArea === undefined || this.#recordContainer === undefined
-      || this.#displayArea === undefined) {
-      throw new Error('Invalid parameters for virtual scroll');
+  #itemOperArea;
+  /**
+   * Make the element with large number of items to virtual scroll
+   * @param {object} config - Configuration for virtual scroll
+   * @param {Array} config.items - A large number of data.
+   * @param {String} config.virtualScrollAreaId - Id of the element for virtual scroll.
+   * @param {Number} [config.viewportHeight=500] - Height of the viewport (virtual scroll area).
+   * @param {Number} [config.itemNumInViewport=5] - The number of item to show in the viewport.
+   * @param {Number} [config.paddingNum=10] - The number of extra items outside the viewport (for better smoothly scroll).
+   * @param {Boolean} [config.needItemOper=false] - Extra functional button for manipulating the items inside viewport.
+   */
+  constructor({ items, virtualScrollAreaId, viewportHeight = 500, itemNumInViewport = 5, paddingNum = 10, needItemOper = true }) {
+    if (items === undefined || !(items instanceof Array)) {
+      throw new Error('The reference of the items for virtual scrolling is required');
+    }
+    if (virtualScrollAreaId === undefined || !document.getElementById(virtualScrollAreaId)) {
+      throw new Error('The element for virtual scrolling is required.')
     }
 
-    this.#scrollAreaHeight = scrollAreaHeight || 500;
-    this.#displayRecordsNum = displayRecordsNum || 5;
-    this.#recordHeight = this.#scrollAreaHeight / this.#displayRecordsNum;
-    this.#paddingRecordsNum = paddingRecordsNum || 10;
+    this.#items = items;
+    this.#virtualScrollArea = document.getElementById(virtualScrollAreaId);
+    this.#virtualScrollArea.innerHTML = `
+      <div id="itemsContainer" style="overflow:hidden;">
+        <div id="viewport"></div>
+      </div>
+    `;
+    this.#itemsContainer = document.getElementById('itemsContainer');
+    this.#viewport = document.getElementById('viewport');
 
-    this.#virtualScrollArea.style.height = `${this.#scrollAreaHeight}px`;
-    this.#recordContainer.style.height = `${this.#records.length * this.#recordHeight}px`;
+    this.#viewportHeight = viewportHeight;
+    this.#itemNumInViewport = itemNumInViewport;
+    this.#recordHeight = this.#viewportHeight / this.#itemNumInViewport;
+    this.#paddingNum = paddingNum;
+    this.#renderItemNum = itemNumInViewport + paddingNum * 2;
+
+    this.#virtualScrollArea.style.height = `${this.#viewportHeight}px`;
+    this.#itemsContainer.style.height = `${this.#items.length * this.#recordHeight}px`;
+    if (needItemOper) this.#initItemOperArea();
+
     this.#viewAreaYval = this.#virtualScrollArea.getBoundingClientRect().y;
     this.#virtualScrollArea.addEventListener('scroll', throttle(this.#virtualScrollContent.bind(this)));
   }
 
-  handleScrollContentChange(records) {
-    this.#records = records;
-    this.#recordContainer.style.height = `${this.#records.length * this.#recordHeight}px`;
-    this.#virtualScrollArea.scrollTop = 0;
-    this.#updateContentOfScrollTo(0, this.#displayRecordsNum + 2 * this.#paddingRecordsNum);
-    this.#configHandlerBtnRecordId();
+  #initItemOperArea() {
+    this.#itemOperArea = document.createElement('div');
+    this.#itemOperArea.classList.add('h-100', 'd-flex', 'flex-column');
+    this.#itemOperArea.style.cssText = 'position: absolute;top: 0;left: 80%;';
+    this.#itemOperArea.innerHTML = Array.from(
+      { length: this.#itemNumInViewport }, (_, index) => index,
+    ).reduce((html, index) => (
+      html + '<div class="btnField" style="height:20%">'
+      + `${index < this.#items.length
+        ? `
+            <a href="/records/${this.#items[index].id}/edit" class="btn btn-primary" id="editBtn${index}"></a>
+            <form action="/records/${this.#items[index].id}?_method=DELETE" method="post" style="display:inline-block;" id="deleteForm${index}"
+              data-record-info="[${this.#items[index].date}] ${this.#items[index].name} \$${this.#items[index].amount}"  onsubmit="handleDeleteReq(event)">
+              <button type="submit" class="btn btn-danger""></button>
+            </form>
+          `
+        : ''
+      }`
+      + '</div>'
+    ), '');
+    this.#virtualScrollArea.after(this.#itemOperArea);
   }
 
   #updateContentOfScrollTo(startIndex, amount) {
-    this.#displayArea.innerHTML = this.#records.slice(startIndex, startIndex + amount).reduce((html, record, index) => {
+    this.#viewport.innerHTML = this.#items.slice(startIndex, startIndex + amount).reduce((html, record, index) => {
       const isGrayBg = (startIndex + index) % 2 === 0;
       html += `
-        <div class="row px-2" data-record-id="${record.id}" id="scrollItem${index}" style="height:${this.#recordHeight}px;${isGrayBg ? 'background-color:rgb(241, 241, 241)' : ''}">
+        <div class="row px-2" id="scrollItem${index}" style="height:${this.#recordHeight}px;${isGrayBg ? 'background-color:rgb(241, 241, 241)' : ''}"
+          data-id="${record.id}" data-name="${record.name}" data-date="${record.date}" data-amount="${record.amount}">
           <div class="col-2 d-flex justify-content-end align-items-center pa-0" style="color: rgb(162, 225, 233);">
             <i class="${record.categoryIcon}" style="font-size: 56px"></i>
           </div>
@@ -63,47 +100,50 @@ export class VShandler {
   }
 
   #getFirstRecordIndexInViewport() {
-    const recordEles = Array.from(this.#displayArea.children);
+    const recordEles = Array.from(this.#viewport.children);
 
-    for (const [index, recordEle] of recordEles.entries()) {
-      const elePartialPos = recordEle.getBoundingClientRect().y + this.#recordHeight * 0.3;
-      if (elePartialPos > this.#viewAreaYval) {
-        return index;
-      }
+    if (!recordEles.length) return 0;
+
+    const firstElePos = recordEles[0].getBoundingClientRect().y + this.#recordHeight * 0.3;
+    for (let elePos = firstElePos, index = 0; index < recordEles.length; index++, elePos += this.#recordHeight) {
+      if (elePos > this.#viewAreaYval) return index;
     }
-    return 0;
+
+    return Infinity;
   }
 
   #configHandlerBtnRecordId() {
     const startIndex = this.#getFirstRecordIndexInViewport();
-    const endIndex = startIndex + Math.min(this.#records.length, 5);
+    const endIndex = startIndex + Math.min(this.#items.length, 5);
     let btnIndex = 0;
 
     for (let i = startIndex; i < endIndex; i++) {
-      const curRecordId = this.#displayArea.children[i].dataset.recordId;
-      const curRecordIndex = this.#records.findIndex((record) => record.id === Number(curRecordId));
+      const recordInfo = this.#viewport.children[i].dataset;
       const editRecordEle = document.getElementById(`editBtn${btnIndex}`);
       const delRecordEle = document.getElementById(`deleteForm${btnIndex}`);
 
-      editRecordEle.setAttribute('href', `/records/${curRecordId}/edit`);
-      delRecordEle.setAttribute('action', `/records/${curRecordId}?_method=DELETE`);
-      delRecordEle.dataset.recordInfo = `[${this.#records[curRecordIndex].date}] ${this.#records[curRecordIndex].name} \$${this.#records[curRecordIndex].amount}`;
+      editRecordEle.setAttribute('href', `/records/${recordInfo.id}/edit`);
+      delRecordEle.setAttribute('action', `/records/${recordInfo.id}?_method=DELETE`);
+      delRecordEle.dataset.recordInfo = `[${recordInfo.date}] ${recordInfo.name} \$${recordInfo.amount}`;
       btnIndex++;
     }
   }
 
   #virtualScrollContent(event) {
     const renderStartIndex = Math.max(
-      Math.ceil(event.target.scrollTop / this.#recordHeight) - this.#paddingRecordsNum, 0
+      Math.ceil(event.target.scrollTop / this.#recordHeight) - this.#paddingNum, 0
     );
-    const renderAmount = Math.min(
-      Math.ceil(this.#scrollAreaHeight / this.#recordHeight) + 2 * this.#paddingRecordsNum,
-      this.#records.length - renderStartIndex,
-    );
-    const moveDist = renderStartIndex * this.#recordHeight;
 
-    this.#displayArea.style.transform = `translateY(${moveDist}px)`;
-    this.#updateContentOfScrollTo(renderStartIndex, renderAmount);
-    this.#configHandlerBtnRecordId();
+    this.#viewport.style.transform = `translateY(${renderStartIndex * this.#recordHeight}px)`;
+    this.#updateContentOfScrollTo(renderStartIndex, this.#renderItemNum);
+    if (this.#itemOperArea) this.#configHandlerBtnRecordId();
+  }
+
+  handleScrollContentChange(items) {
+    this.#items = items;
+    this.#itemsContainer.style.height = `${this.#items.length * this.#recordHeight}px`;
+    this.#virtualScrollArea.scrollTop = 0;
+    this.#updateContentOfScrollTo(0, this.#renderItemNum);
+    if (this.#itemOperArea) this.#configHandlerBtnRecordId();
   }
 }
