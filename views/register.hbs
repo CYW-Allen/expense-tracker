@@ -2,23 +2,22 @@
 <div class="mt-5 container w-50">
   <form action="/users" method="POST" class="needs-validation" id="userForm" novalidate>
     <div class="row mb-3">
-      <label for="name" class="col-3 col-form-label fs-5 fw-bold">用戶名稱 (<span class="text-danger">必填</span>)</label>
+      <label for="name" class="col-3 col-form-label fs-5 fw-bold">用戶名稱 <span class="text-danger">*</span></label>
       <div class="col-9">
-        <input type="text" class="form-control" name="name" id="name" placeholder="Enter name">
+        <input type="text" class="form-control" name="name" id="name">
       </div>
     </div>
     <div class="row mb-3">
-      <label for="category" class="col-3 col-form-label fs-5 fw-bold">帳號密碼 (<span class="text-danger">必填</span>)</label>
+      <label for="category" class="col-3 col-form-label fs-5 fw-bold">帳號密碼 <span class="text-danger">*</span></label>
       <div class="col-9">
-        <input type="password" class="form-control" name="password" id="password" placeholder="Enter password"
+        <input type="password" class="form-control" name="password" id="password"
           onchange="form.confirmPwd.pattern = this.value" required>
       </div>
     </div>
     <div class="row mb-3">
-      <label for="image" class="col-3 col-form-label fs-5 fw-bold">確認密碼 (<span class="text-danger">必填</span>)</label>
+      <label for="image" class="col-3 col-form-label fs-5 fw-bold">確認密碼 <span class="text-danger">*</span></label>
       <div class="col-9">
-        <input type="password" class="form-control" name="confirmPwd" id="confirmPwd" placeholder="Comfirm password"
-          required>
+        <input type="password" class="form-control" name="confirmPwd" id="confirmPwd" required>
         <div class="invalid-feedback">
           此欄位值須與密碼欄位值相符
         </div>
